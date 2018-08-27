@@ -1,11 +1,7 @@
 import React from 'react';
 import debounce from 'lodash/debounce';
 
-import { Colors } from 'politico-style';
-
 import Chart from '../lib/chart.js';
-
-const { brand } = Colors;
 
 class ChartContainer extends React.Component {
   constructor(props) {
@@ -15,17 +11,17 @@ class ChartContainer extends React.Component {
   }
   componentDidMount() {
     // Create the chart on mount
-    this.createChart(null, { fill: brand.politicoBlue.hex });
+    this.createChart(this.props.geoData, { districtNumber: 27 });
     // Add a listener to resize chart with the window
     window.addEventListener('resize', debounce(this.resizeChart, 250));
 
-    // Showreel...
-    setTimeout(() => {
-      this.updateChart([20, 34, 48, 60], { fill: brand.politicoOrange.hex });
-    }, 1000);
-    setTimeout(() => {
-      this.updateChart([30, 50, 30], { fill: brand.politicoBlue.hex });
-    }, 2000);
+    const districtNumbers = [...Array(36).keys()];
+
+    districtNumbers.forEach((num, i) => {
+      setTimeout(() => {
+        this.updateChart({ districtNumber: num + 1 });
+      }, (i * 750));
+    });
   }
 
   componentDidUpdate() {
@@ -37,12 +33,12 @@ class ChartContainer extends React.Component {
     window.removeEventListener('resize', debounce(this.resizeChart, 250));
   }
 
-  createChart = (data = null, props = null) => {
+  createChart = (data = null, props = {}) => {
     this.chart.create('#chart', data, props);
   }
 
-  updateChart = (data = null, props = null) => {
-    this.chart.update(data, props);
+  updateChart = (props = {}) => {
+    this.chart.update(props);
   }
 
   resizeChart = () => {
@@ -51,7 +47,9 @@ class ChartContainer extends React.Component {
 
   render() {
     return (
-      <div id='chart' />
+      <div style={{padding: '60px', width: '60px', margin: '0 auto'}} >
+        <div id='chart' />
+      </div>
     );
   }
 }

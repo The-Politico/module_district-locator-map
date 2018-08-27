@@ -2,16 +2,67 @@
 
 # module-district-locator-map
 
-A reusable chart module made with ❤️.
+Show a congressional district in miniature. If the district is too small to be visible, display a hollow circle at its centroid.
 
-![](preview.png)
+A reusable chart module made with ❤️ at POLITICO.
+
+
+![](preview.gif)
 
 ### Install
+
+Install this module from GitHub.
+
 ```bash
-$ yarn add git+ssh://git@github.com:The-Politico/module-district-locator-map
+$ yarn add git+ssh://git@github.com:The-Politico/module_district-locator-map
 ```
 
 ### Use
+
+##### As a module
+
+To use as a module, simply import the chart object:
+```javascript
+import DistrictLocator from 'module-district-locator-map';
+```
+
+
+The chart object has three methods, one to create the chart, initially, another to update chart elements and one to resize the chart.
+
+The chart module expects to receive topojson data passed on create. See an example of the topojson format the module expects [here](https://www.politico.com/election-results/cdn/geography/us-census/cb/500k/2016/states/48/district.json).
+
+```javascript
+const myChart = new DistrictLocator();
+
+// The create method needs a selection string, which will be parent
+// to the chart elements, and a data array. You can also provide an
+// optional properties object.
+
+// DEFAULT PROPS
+const props = {
+  districtNumber: 1,
+  districtFill: '#282828',
+  size: 50,
+  stateFill: '#ddd',
+  centroidRadius: 2,
+  centroidStrokeWidth: 1.5,
+  showDot: (stats) => {
+    // stats is an object with computed geometric info for the
+    // district path expressed in pixels.
+    if (stats.area < 10) return true;
+    if (stats.extent[0] < 5 || stats.extent[1] < 5) return true;
+    return false;
+  },
+};
+
+myChart.create('#chart', topojson, props);
+
+// The update method takes new props
+myChart.update(newProps);
+
+// The resize method can be called at any point to update the chart's size.
+myChart.resize();
+```
 
 ##### In the browser
 
@@ -21,8 +72,8 @@ Include any dependencies, your stylesheet and the minified bundle, which defines
 <!-- head -->
 <script src="https://cdn.jsdelivr.net/npm/babel-polyfill@6.26.0/dist/polyfill.min.js"></script>
 <script src="https://d3js.org/d3.v5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
 <script src="chart.min.js"></script>
-<link rel="stylesheet" type="text/css" href="styles.css">
 
 <!-- body -->
 <div id="DistrictLocator-container"></div>
@@ -30,45 +81,12 @@ Include any dependencies, your stylesheet and the minified bundle, which defines
 <script type="text/javascript">
 var myChart = new DistrictLocator();
 
-myChart.create('#DistrictLocator-container', data);
-</script>
-```
-##### As a module
-
-To use as a module, simply import the chart object:
-```javascript
-import DistrictLocator from 'module-district-locator-map';
-```
-
-
-The chart object has three methods, one to create the chart, initially, another to update chart elements with new data, and one to resize the chart.
-
-```javascript
-const myChart = new DistrictLocator();
-
-// The create method needs a selection string, which will be parent
-// to the chart elements, and a data array. You can also provide an
-// optional properties object.
-
 const props = {
-  stroke: 'orange',
+  // Some props. See module example for defaults.
 };
 
-myChart.create('#chart', data, props);
-
-// The update method takes new data to update chart elements.
-myChart.update(newData);
-
-// The resize method can be called at any point to update the chart's size.
-myChart.resize();
-```
-
-To apply this chart's default styles when using SCSS, simply define the variable `$DistrictLocator-container` to represent the ID or class of the chart's container(s) and import the `_chart.scss` partial.
-
-```CSS
-$DistrictLocator-container: '#chart';
-
-@import '~module-district-locator-map/src/scss/chart';
+myChart.create('#DistrictLocator-container', topojson, props);
+</script>
 ```
 
 

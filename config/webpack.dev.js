@@ -10,6 +10,7 @@ const config = (env, argv, port) => ({
   entry: {
     app: [
       '@babel/polyfill',
+      'whatwg-fetch',
       path.resolve(process.cwd(), 'src/js/demo/App.jsx'),
     ],
   },

@@ -10,6 +10,7 @@ module.exports = (env, argv) => ({
   entry: {
     app: [
       '@babel/polyfill',
+      'whatwg-fetch',
       path.resolve(process.cwd(), 'src/js/demo/App.jsx'),
     ],
   },

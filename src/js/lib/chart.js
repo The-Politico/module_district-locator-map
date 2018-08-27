@@ -1,6 +1,7 @@
 import d3 from './utils/d3';
+import * as topojson from 'topojson';
 
-import defaultData from './data/default.json';
+// import defaultData from './data/default.json';
 
 export default () => ({
 
@@ -16,54 +17,84 @@ export default () => ({
      * by passing a props object through the module's create or update methods.
      */
     let props = {
-      stroke: 'lightgrey',
-      strokeWidth: '1px',
-      fill: 'steelblue',
+      size: 50,
+      districtNumber: 1,
+      districtFill: '#282828',
+      stateFill: '#ddd',
+      centroidRadius: 2,
+      centroidStrokeWidth: 1.5,
+      showDot: (stats) => {
+        if (stats.area < 10) return true;
+        if (stats.extent[0] < 5 || stats.extent[1] < 5) return true;
+        return false;
+      },
     };
 
     function chart(selection) {
-      selection.each((data, i, elements) => {
+      selection.each((geoData, i, elements) => {
         /**
          * YOUR D3 CODE HERE 📈 📊 🌐
          */
         const node = elements[i]; // the selected element
-        const { width, height } = node.getBoundingClientRect();
-        const t = d3.transition()
-          .duration(750);
+        const { size, districtNumber } = props;
 
-        const g = d3.select(node)
-          .appendSelect('svg') // see docs in ./utils/d3.js
-          .attr('width', width)
-          .attr('height', height)
-          .appendSelect('g')
-          .attr('transform', `translate(${width / 2 - 62}, 60)`);
+        const features = topojson.feature(geoData, {
+          type: 'GeometryCollection',
+          geometries: geoData.objects['divisions'].geometries,
+        });
 
-        const circles = g.selectAll('circle') // DATA JOIN
-          .data(data, (d, i) => i);
+        const path = d3.geoPath()
+          .projection(
+            d3.geoMercator()
+              .fitSize([size, size], features)
+          );
 
-        circles // UPDATE
-          .style('fill', props.fill)
-          .style('stroke', props.stroke);
+        const districtGeo = geoData.objects.divisions.geometries
+          .filter(g =>
+            g.properties.district === districtNumber.toString().padStart(2, '0')
+          )[0];
+        const districtFeature = topojson.feature(geoData, districtGeo);
+        const districtStats = {
+          area: path.area(districtFeature),
+          centroid: path.centroid(districtFeature),
+          bounds: path.bounds(districtFeature),
+        };
+        districtStats.extent = [
+          districtStats.bounds[1][0] - districtStats.bounds[0][0], // X extent
+          districtStats.bounds[1][1] - districtStats.bounds[0][1], // Y extent
+        ];
 
-        circles.enter().append('circle') // ENTER
-          .style('fill', props.fill)
-          .style('stroke', props.stroke)
-          .style('stroke-width', props.strokeWidth)
-          .attr('cy', '60')
-          .attr('cx', (d, i) =>
-            data.slice(0, i).reduce((a, b) => a + b, 0) + (d / 2)
-          )
-          .merge(circles) // ENTER + UPDATE
-          .transition(t)
-          .attr('cx', (d, i) =>
-            data.slice(0, i).reduce((a, b) => a + b, 0) + (d / 2)
-          )
-          .attr('r', d => d / 2);
+        const svg = d3.select(node)
+          .appendSelect('svg')
+          .attr('width', size)
+          .attr('height', size);
 
-        circles.exit() // EXIT
-          .transition(t)
-          .attr('r', 0)
-          .remove();
+        const backgroundPaths = svg.selectAll('path.background')
+          .data(features.features);
+
+        backgroundPaths.enter().append('path')
+          .attr('class', 'background')
+          .merge(backgroundPaths)
+          .attr('d', path)
+          .attr('fill', props.stateFill)
+          .attr('stroke', props.stateFill);
+
+        if (props.showDot(districtStats)) {
+          svg.appendSelect('circle', 'centroid')
+            .attr('fill', 'none')
+            .attr('stroke', props.districtFill)
+            .attr('stroke-width', props.centroidStrokeWidth)
+            .attr('r', props.centroidRadius)
+            .attr('cx', districtStats.centroid[0])
+            .attr('cy', districtStats.centroid[1]);
+          svg.select('path.foreground').remove();
+        } else {
+          svg.appendSelect('path', 'foreground')
+            .attr('d', path(districtFeature))
+            .attr('fill', props.districtFill)
+            .attr('stroke-width', 0);
+          svg.select('circle.centroid').remove();
+        }
       });
     }
 
@@ -88,7 +119,7 @@ export default () => ({
       .props(this._props);
 
     d3.select(this._selection)
-      .datum(this._data)
+      .datum(this._geoData)
       .call(chart);
   },
 
@@ -101,9 +132,9 @@ export default () => ({
   /**
    * Creates the chart initially.
    */
-  create(selection, data, props = {}) {
+  create(selection, geoData, props = {}) {
     this._selection = selection;
-    this._data = data || defaultData;
+    this._geoData = geoData;
     this._props = props;
 
     this.draw();
@@ -112,8 +143,7 @@ export default () => ({
   /**
    * Updates the chart with new data and/or props.
    */
-  update(data, props = {}) {
-    this._data = data || this._data;
+  update(props = {}) {
     this._props = Object.assign({}, this._props, props);
     this.draw();
   },
