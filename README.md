@@ -4,6 +4,8 @@
 
 Show a congressional district in miniature. If the district is too small to be visible, display a hollow circle at its centroid.
 
+[Demo.](https://the-politico.github.io/module_district-locator-map/)
+
 A reusable chart module made with ❤️ at POLITICO.
 
 
