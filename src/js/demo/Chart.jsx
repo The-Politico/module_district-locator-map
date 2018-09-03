@@ -20,8 +20,10 @@ class ChartContainer extends React.Component {
     districtNumbers.forEach((num, i) => {
       setTimeout(() => {
         this.updateChart({ districtNumber: num + 1 });
-      }, (i * 750));
+      }, ((i + 1) * 750));
     });
+
+    this.updateChart({ districtNumber: 0 });
   }
 
   componentDidUpdate() {

@@ -38,6 +38,8 @@ export default () => ({
         const node = elements[i]; // the selected element
         const { size, districtNumber } = props;
 
+        const districtID = districtNumber.toString().padStart(2, '0');
+
         const features = topojson.feature(geoData, {
           type: 'GeometryCollection',
           geometries: geoData.objects['divisions'].geometries,
@@ -48,21 +50,6 @@ export default () => ({
             d3.geoMercator()
               .fitSize([size, size], features)
           );
-
-        const districtGeo = geoData.objects.divisions.geometries
-          .filter(g =>
-            g.properties.district === districtNumber.toString().padStart(2, '0')
-          )[0];
-        const districtFeature = topojson.feature(geoData, districtGeo);
-        const districtStats = {
-          area: path.area(districtFeature),
-          centroid: path.centroid(districtFeature),
-          bounds: path.bounds(districtFeature),
-        };
-        districtStats.extent = [
-          districtStats.bounds[1][0] - districtStats.bounds[0][0], // X extent
-          districtStats.bounds[1][1] - districtStats.bounds[0][1], // Y extent
-        ];
 
         const svg = d3.select(node)
           .appendSelect('svg')
@@ -76,8 +63,31 @@ export default () => ({
           .attr('class', 'background')
           .merge(backgroundPaths)
           .attr('d', path)
-          .attr('fill', props.stateFill)
-          .attr('stroke', props.stateFill);
+          .attr('fill', districtID === '00' ?
+            props.districtFill : props.stateFill)
+          .attr('stroke', districtID === '00' ?
+            props.districtFill : props.stateFill);
+
+        if (districtID === '00') {
+          svg.select('circle.centroid').remove();
+          svg.select('path.foreground').remove();
+          return;
+        }
+
+        const districtGeo = geoData.objects.divisions.geometries
+          .filter(g =>
+            g.properties.district === districtID
+          )[0];
+        const districtFeature = topojson.feature(geoData, districtGeo);
+        const districtStats = {
+          area: path.area(districtFeature),
+          centroid: path.centroid(districtFeature),
+          bounds: path.bounds(districtFeature),
+        };
+        districtStats.extent = [
+          districtStats.bounds[1][0] - districtStats.bounds[0][0], // X extent
+          districtStats.bounds[1][1] - districtStats.bounds[0][1], // Y extent
+        ];
 
         if (props.showDot(districtStats)) {
           svg.appendSelect('circle', 'centroid')
