@@ -87,13 +87,24 @@ var chart = (function () {
           var _props = props,
               size = _props.size,
               districtNumber = _props.districtNumber;
+          var districtID = districtNumber.toString().padStart(2, '0');
           var features = feature(geoData, {
             type: 'GeometryCollection',
             geometries: geoData.objects['divisions'].geometries
           });
           var path = d3.geoPath().projection(d3.geoMercator().fitSize([size, size], features));
+          var svg = d3.select(node).appendSelect('svg').attr('width', size).attr('height', size);
+          var backgroundPaths = svg.selectAll('path.background').data(features.features);
+          backgroundPaths.enter().append('path').attr('class', 'background').merge(backgroundPaths).attr('d', path).attr('fill', districtID === '00' ? props.districtFill : props.stateFill).attr('stroke', districtID === '00' ? props.districtFill : props.stateFill);
+
+          if (districtID === '00') {
+            svg.select('circle.centroid').remove();
+            svg.select('path.foreground').remove();
+            return;
+          }
+
           var districtGeo = geoData.objects.divisions.geometries.filter(function (g) {
-            return g.properties.district === districtNumber.toString().padStart(2, '0');
+            return g.properties.district === districtID;
           })[0];
           var districtFeature = feature(geoData, districtGeo);
           var districtStats = {
@@ -103,9 +114,6 @@ var chart = (function () {
           };
           districtStats.extent = [districtStats.bounds[1][0] - districtStats.bounds[0][0], // X extent
           districtStats.bounds[1][1] - districtStats.bounds[0][1]];
-          var svg = d3.select(node).appendSelect('svg').attr('width', size).attr('height', size);
-          var backgroundPaths = svg.selectAll('path.background').data(features.features);
-          backgroundPaths.enter().append('path').attr('class', 'background').merge(backgroundPaths).attr('d', path).attr('fill', props.stateFill).attr('stroke', props.stateFill);
 
           if (props.showDot(districtStats)) {
             svg.appendSelect('circle', 'centroid').attr('fill', 'none').attr('stroke', props.districtFill).attr('stroke-width', props.centroidStrokeWidth).attr('r', props.centroidRadius).attr('cx', districtStats.centroid[0]).attr('cy', districtStats.centroid[1]);
